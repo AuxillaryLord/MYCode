@@ -16,15 +16,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $user = $res->fetch_assoc();
 
         if (password_verify($password, $user['password'])) {
-            // ✅ Set all necessary session variables
-            $_SESSION['user_id'] = $user['id'];
-            $_SESSION['username'] = $user['display_name'];
+            $_SESSION['user'] = $user['username'];
             $_SESSION['role'] = $user['role'];
-			$_SESSION['user'] = $user['username'];
             $_SESSION['logged_in'] = true;
 
-            // ✅ Redirect to centralized main menu
-            header("Location: /training-portal/main.php");
+            // Redirect based on role
+            if ($user['role'] === 'admin') {
+                // Admins can access both areas
+                header("Location: /training-portal/main.php");
+            } elseif ($user['role'] === 'trainee' || $user['role'] === 'user') {
+                // Trainees only access training
+                header("Location: /training-portal/main.php");
+            } else {
+                echo "<script>alert('Invalid role assigned!'); window.location.href = '../login.php';</script>";
+            }
             exit();
         } else {
             echo "<script>alert('Incorrect password!'); window.location.href = '../login.php';</script>";

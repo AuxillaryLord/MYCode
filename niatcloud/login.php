@@ -203,13 +203,8 @@
 				<form action="php/login.php" method="post">
 					<input type="text" name="username" placeholder="Username" required>
 					<input type="password" name="password" placeholder="Password" required>
-					<button type="submit">Login</button><br>
-					
-				</form><br>
-				<!-- Guest Access Button -->
-				<div class="mt-4 text-center">
-					<a href="php/guest_login.php" class="bg-red-600 hover:bg-red-800 text-white px-4 py-2 rounded inline-block">Continue as Guest (for booking NIAT facilities)</a>
-				</div>
+					<button type="submit">Login</button>
+				</form>
 			</div>
 		</div>
 	</div>

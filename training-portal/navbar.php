@@ -1,13 +1,9 @@
 <?php
 session_start();
-// Unified login session check
-if (!isset($_SESSION['username']) || !isset($_SESSION['role'])) {
-    header("Location: ../niatcloud/login.php");
+if (!isset($_SESSION['user'])) {
+    header("Location: login.php");
     exit();
 }
-
-$userRole = $_SESSION['role']; // Expected: admin, user, trainee
-
 // Default URLs (override in individual pages if needed)
 $courseLink = isset($course_id) ? "subjects.php?course_id=$course_id" : "main.php";
 $subjectLink = isset($subject_id) ? "materials.php?subject_id=$subject_id" : "admin_manage.php";
@@ -33,7 +29,7 @@ $userRole = $_SESSION['role'];
     </div>
 
     <div>
-      <a href="../classroom_monitoring/routine/logout_trg.php" class="hover:text-gray-200">🔁 Logout</a>
+      <a href="../niatcloud/php/logout.php" class="hover:text-gray-200">🔁 Logout</a>
     </div>
   </div>
 </nav>
