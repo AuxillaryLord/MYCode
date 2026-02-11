@@ -1,0 +1,227 @@
+/* Container Setup */
+		.container {
+			width: 80%;
+			margin: 0 auto;
+			padding-top: 20px;
+		}
+
+		/* Header Styling */
+		.header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			background-color: #003366; /* Dark Navy */
+			padding: 20px 30px;
+			border-radius: 10px;
+			box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+			margin-bottom: 30px;
+			flex-wrap: wrap;
+		}
+
+		.unit-logo {
+			height: 60px;
+			width: auto;
+		}
+
+		.header-center {
+			text-align: center;
+			flex: 1;
+		}
+
+		.header-center h1 {
+			font-size: 28px;
+			font-family: 'Arial Black', sans-serif;
+			color: #ffffff;
+			font-weight: bold;
+		}
+
+		.header-center p {
+			font-size: 17px;
+			font-family: 'Times New Roman', sans-serif;
+			color: #f79256;
+			margin-top: 5px;
+		}
+
+		/* Logout Button */
+		.header-right .btn-logout {
+			background-color: #ff4d4d;
+			color: #fff;
+			border: none;
+			padding: 10px 18px;
+			border-radius: 6px;
+			font-size: 16px;
+			cursor: pointer;
+			transition: background-color 0.3s ease;
+		}
+
+		.header-right .btn-logout:hover {
+			background-color: #e60000;
+		}
+
+		/* Button Styles */
+		.btn-approve, .btn-submit, .btn-reset, .btn-logout, .request-card button {
+			font-size: 16px;
+			font-weight: bold;
+			padding: 12px 24px;
+			border-radius: 8px;
+			border: none;
+			cursor: pointer;
+			transition: background-color 0.3s ease, transform 0.3s ease;
+		}
+
+		.btn-approve {
+			background-color: #0277BD;
+			color: white;
+		}
+
+		.btn-approve:hover {
+			background-color: #01579B;
+			transform: scale(1.05);
+		}
+
+		.btn-reject {
+			background-color: #D32F2F;
+			color: white;
+		}
+		
+		.btn-reset {
+			background-color: #D32F2F;
+			color: white;
+		}
+
+		.btn-reject:hover {
+			background-color: #C2185B;
+			transform: scale(1.05);
+		}
+
+		.btn-submit {
+			background-color: #0277BD;
+			color: white;
+		}
+
+		.btn-submit:hover {
+			background-color: #0288D1;
+			transform: scale(1.05);
+		}
+		.btn-reset:hover {
+			background-color: #0288D1;
+			transform: scale(1.05);
+		}
+
+		.request-card button {
+			background-color: #006F9A;
+			color: white;
+		}
+
+		.request-card button:hover {
+			background-color: #005A7A;
+			transform: scale(1.05);
+		}
+
+		/* Request Card */
+		.request-card {
+			background-color: #ffffff; /* Dark Navy */
+			border-radius: 10px;
+			margin: 15px 0;
+			padding: 20px;
+			box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+			color: black;
+			transition: transform 0.3s ease;
+		}
+
+		.request-card:hover {
+			transform: scale(1.02);
+		}
+
+		/* Overview Table */
+		.overview-table {
+			width: 100%;
+			border-collapse: collapse;
+			margin-top: 20px;
+			background-color: #ffffff;
+			color: #000;
+			border-radius: 8px;
+			box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+		}
+
+		.overview-table th, .overview-table td {
+			padding: 12px;
+			border: 1px solid #ddd;
+			text-align: center;
+		}
+
+		.overview-table th {
+			background-color: #003366;
+			color: white;
+		}
+
+		/* Section Title */
+		.section-title {
+			font-size: 26px;
+			font-weight: bold;
+			color: #003366;
+			margin-bottom: 20px;
+		}
+
+		/* Body Styling */
+		body {
+			font-family: 'Segoe UI', sans-serif;
+			background-color: #002147; /* Dark Navy blue */
+			color: #fff;
+			margin: 0;
+			padding: 20px;
+		}
+		
+		.request-details {
+			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Modern and clean font */
+			font-size: 18px; /* Slightly larger font size for better readability */
+			color: #e0e0e0; /* Light gray text for a soft, modern look */
+			line-height: 1.6; /* Adds spacing between lines for better readability */
+			letter-spacing: 0.5px; /* Adds slight spacing between letters */
+			background-color: #002147; /* Dark background to make the text pop */
+			padding: 15px;
+			border-radius: 8px;
+			box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Soft shadow for depth */
+			display: block; /* Makes the span behave like a block-level element */
+			margin: 10px 0;
+		}
+
+		.request-details b, .request-details strong {
+			color: #f79256; /* Warm accent color for bold and strong elements */
+		}
+
+		.request-details b {
+			font-weight: bold;
+			text-transform: uppercase;
+			font-size: 20px; /* Make the requester name stand out */
+		}
+
+		.request-details strong {
+			font-weight: normal;
+			color: #fff; /* White color for strong text to stand out */
+		}
+
+
+		/* Responsive Design */
+		@media (max-width: 768px) {
+			.header {
+				flex-direction: column;
+				text-align: center;
+			}
+
+			.header-center h1 {
+				font-size: 24px;
+			}
+
+			.overview-table th, .overview-table td {
+				padding: 8px;
+			}
+
+			.request-card {
+				margin: 10px 0;
+			}
+
+			.unit-logo {
+				height: 50px;
+			}
+		}

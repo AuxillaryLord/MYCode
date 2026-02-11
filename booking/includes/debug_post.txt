@@ -1,0 +1,9 @@
+Array
+(
+    [facility_id] => 2
+    [start_date] => 2025-05-16
+    [end_date] => 2025-05-17
+    [name] => sonymon
+    [unit] => garuda
+    [slot] => 08:00-11:00
+)
