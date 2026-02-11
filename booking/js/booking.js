@@ -11,32 +11,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const timeFields = document.getElementById('custom-time-fields');
   const slotStatus = document.getElementById('slot-status');
   const slotMessage = document.getElementById('slot-message');
-  
-  
-  const pickerStart = new Pikaday({
-		  field: document.getElementById('start_date'),
-		  format: 'YYYY-MM-DD', // Ensures proper database-friendly format
-		  toString(date, format) {
-			const day = date.getDate().toString().padStart(2, '0');
-			const month = (date.getMonth() + 1).toString().padStart(2, '0');
-			const year = date.getFullYear();
-			return `${year}-${month}-${day}`;
-		  },
-		  minDate: new Date()
-		});
 
-	const pickerEnd = new Pikaday({
-		  field: document.getElementById('end_date'),
-		  format: 'YYYY-MM-DD',
-		  toString(date, format) {
-			const day = date.getDate().toString().padStart(2, '0');
-			const month = (date.getMonth() + 1).toString().padStart(2, '0');
-			const year = date.getFullYear();
-			return `${year}-${month}-${day}`;
-		  },
-		  minDate: new Date()
-		});
-	
   // Validate required elements
   if (!form || !facility || !startDate || !endDate || !startTime || !endTime || !name || !unit || !slot || !timeFields) {
     console.error('❌ Missing one or more required form elements.');
@@ -145,10 +120,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Create the list of dates between the selected range
     const dateList = [];
-    for (let d = new Date(start.getTime()); d <= end; d.setDate(d.getDate() + 1)) {
-	  dateList.push(new Date(d).toISOString().split('T')[0]);
-	}
-
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      dateList.push(new Date(d).toISOString().split('T')[0]);
+    }
 
     let allHtml = '';
     const allSlots = [
@@ -163,14 +137,6 @@ document.addEventListener('DOMContentLoaded', function () {
     for (const date of dateList) {
       const response = await fetch(`includes/get_slots.php?facility_id=${facilityId}&date=${date}`);
       const data = await response.json();
-	  
-	
-		// Check if data is an array before using forEach
-		if (!Array.isArray(data)) {
-		  console.error('Invalid data format:', data);
-		  slotMessage.textContent = 'Error fetching slot data.';
-		  return;
-		}
 
       // Create a lookup for slot status
       const statusMap = {};
@@ -196,76 +162,59 @@ document.addEventListener('DOMContentLoaded', function () {
 
       // Function to format the date
       function formatDate(isoDateStr) {
-		  const dateObj = new Date(isoDateStr);
-		  const day = String(dateObj.getDate()).padStart(2, '0');
-		  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-		  const month = monthNames[dateObj.getMonth()];
-		  const year = String(dateObj.getFullYear()).slice(-2);
-		  return `${day}-${month}-${year}`;
-		}
+        const dateObj = new Date(isoDateStr);
+        const day = String(dateObj.getDate()).padStart(2, '0');
+        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const month = monthNames[dateObj.getMonth()];
+        const year = String(dateObj.getFullYear()).slice(-2);
+        return `${day}-${month}-${year}`;
+      }
 
-		// Add HTML for the current date and slots
-		// Add HTML for the current date and slots
-		allHtml += `
-		  <div class="my-8 px-2 py-6 rounded-lg border border-gray-200 bg-white shadow-sm lg:flex lg:items-start lg:gap-10">
-			<div class="mb-6 lg:mb-0 lg:w-1/4 xl:w-1/5 flex items-center">
-			  <h3 class="font-semibold text-gray-800 text-lg whitespace-nowrap"> ${formatDate(date)}:</h3>
-			</div>
-			<div class="lg:w-3/4 xl:w-4/5">
-			  <div class="flex flex-wrap gap-3 justify-start">
-		`;
+      // Add HTML for the current date and slots
+      allHtml += `<div class="my-4"><h3 class="font-semibold text-gray-800 mb-2">Date: ${formatDate(date)}</h3><div class="grid grid-cols-2 gap-x-4">`;
+
+      // Generate HTML for each slot
+      allSlots.forEach((slotText, index) => {
+        const status = statusMap[slotText] || 'available';
+
+        let bgColor = 'bg-green-500'; // default: available
+        if (status === 'booked') bgColor = 'bg-red-500';
+		else if (status === 'blocked') bgColor = 'bg-orange-400';
+		else if (status === 'partial') bgColor = 'bg-pink-400';
 
 
+        const classes = index === 4 ? 'col-span-4 justify-self-center w-1/2' : '';
+        allHtml += `
+          <div class="rounded-xl p-2 ext-center shadow-md ${classes} ${bgColor} text-white">
+            ${slotText}
+          </div>
+        `;
+      });
 
-
-		// Generate HTML for each slot
-		allSlots.forEach((slotText, index) => {
-		  const status = statusMap[slotText] || 'available';
-
-		  let bgColor = 'bg-green-500'; // default: available
-		  if (status === 'booked') bgColor = 'bg-red-500';
-		  else if (status === 'blocked') bgColor = 'bg-gray-500';
-		  else if (status === 'partial') bgColor = 'bg-yellow-500';
-
-		  const classes = index === 4 ? 'col-span-full xl:col-span-2 justify-self-center w-full sm:w-3/4 lg:w-1/2' : '';
-		  allHtml += `
-			<div class="rounded-xl px-4 py-3 text-center shadow-md text-sm lg:text-base font-medium ${classes} ${bgColor} text-white hover:scale-105 transition transform duration-200">
-			  ${slotText}
-			</div>
-		  `;
-		});
-
-		let customHtml = '';
+      let customHtml = '';
 
 		data.forEach(item => {
 		  if (!allSlots.includes(item.slot) && item.status === 'custom') {
 			customHtml += `
-			  <div class="rounded-xl p-3 text-center shadow-md bg-yellow-500 text-white my-2">
+			  <div class="rounded-xl p-3 text-center shadow-md bg-pink-400 text-white my-2">
 				Custom Booked: ${item.slot}
 			  </div>
 			`;
 		  }
 		});
 
-		// Close the grid and container
-		allHtml += `
-			  </div> <!-- End of slot grid -->
-			</div> <!-- End of .lg:w-3/4 -->
-		  </div> <!-- End of .lg:flex -->
-		`;
+		allHtml += `</div>`; // close grid container
 
 		if (customHtml) {
 		  allHtml += `
-			<div class="bg-gray-100 p-5 rounded-md border border-gray-300 mt-5 text-lg lg:text-base">
-			  <h4 class="text-lg font-semibold text-gray-700">Custom Booked Slots:</h4>
+			<div class="bg-gray-100 p-4 rounded-md border border-gray-300 mt-4">
+			  <h4 class="text-sm font-semibold text-gray-700">Custom Booked Slots:</h4>
 			  ${customHtml}
 			</div>
 		  `;
 		}
 
-
-		allHtml += `</div></div>`; // Close .lg:w-3/4 and .lg:flex
-
+		allHtml += `</div>`; // close date wrapper
 
 
     }
