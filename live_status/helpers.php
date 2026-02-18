@@ -1,6 +1,9 @@
 <?php
 function getColorClass($locationName) {
-    $conn = new mysqli("localhost", "root", "", "live_network");
+    // MODIFIED: Changed from 'localhost' to use MYSQL_HOST env var or 'mysql' service name
+    // Reason: Docker containers cannot connect to 'localhost' - must use service name from docker-compose.yml
+    // Original: $conn = new mysqli("localhost", "root", "", "live_network");
+    $conn = new mysqli(getenv('MYSQL_HOST') ?: 'mysql', "root", "", "live_network");
 
     if ($conn->connect_error) {
         return 'bg-gray-100'; // fallback

@@ -42,7 +42,11 @@ $lp_result = $conn->query($lp_sql);
         <?php while ($row = $lp_result->fetch_assoc()): ?>
           <li class="bg-white p-4 rounded shadow">
             <h2 class="text-xl font-semibold text-blue-800"><?php echo htmlspecialchars($row['title']); ?></h2>
-            <a href="<?php echo htmlspecialchars($row['file_path']); ?>" class="text-blue-600 hover:underline" target="_blank">View PPT</a>
+            <!-- MODIFIED: Added 'uploads/ppts/' prefix to file path
+                 Reason: Database stores only filename; app needs full path to access files
+                 Original: href="<?php echo htmlspecialchars($row['file_path']); ?>"
+            -->
+            <a href="uploads/ppts/<?php echo htmlspecialchars($row['file_path']); ?>" class="text-blue-600 hover:underline" target="_blank">View PPT</a>
           </li>
         <?php endwhile; ?>
       </ul>

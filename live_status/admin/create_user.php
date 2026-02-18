@@ -6,7 +6,10 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
 }
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
-    $conn = new mysqli("localhost", "root", "", "live_network");
+    // MODIFIED: Changed from 'localhost' to use MYSQL_HOST env var or 'mysql' service name
+    // Reason: Docker containers cannot connect to 'localhost' - must use service name from docker-compose.yml
+    // Original: $conn = new mysqli("localhost", "root", "", "live_network");
+    $conn = new mysqli(getenv('MYSQL_HOST') ?: 'mysql', "root", "", "live_network");
     $username = trim($_POST['username']);
     $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
     $role = $_POST['role'];

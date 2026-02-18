@@ -1,6 +1,9 @@
 <?php
 // Database connection
-$host = 'localhost';
+// MODIFIED: Changed from 'localhost' to use MYSQL_HOST env var or 'mysql' service name
+// Reason: Docker containers cannot connect to 'localhost' - must use service name from docker-compose.yml
+// Original: $host = 'localhost';
+$host = getenv('MYSQL_HOST') ?: 'mysql';
 $db   = 'booking';
 $user = 'root';
 $pass = '';

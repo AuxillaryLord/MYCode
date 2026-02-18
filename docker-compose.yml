@@ -1,0 +1,42 @@
+services:
+  mysql:
+    image: mariadb:10.4
+    container_name: natms_db
+    environment:
+      MYSQL_ROOT_PASSWORD: ''
+      MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./init-db.sh:/docker-entrypoint-initdb.d/01-init-databases.sh
+      - ./DB:/data/sql
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  php:
+    # MODIFIED: Changed from 'image: php:8.0-cli' to use custom Dockerfile
+    # Reason: Base php:8.0-cli image doesn't include mysqli/PDO MySQL extensions
+    # Original: image: php:8.0-cli
+    build: .
+    container_name: natms_web
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    working_dir: /app
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_USER: root
+      MYSQL_PASSWORD: ''
+      MYSQL_DB: booking
+    command: php -S 0.0.0.0:8000 -t .
+
+volumes:
+  mysql_data:

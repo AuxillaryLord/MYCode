@@ -1,5 +1,8 @@
 <?php
-$conn = new mysqli("localhost", "root", "", "live_network");
+// MODIFIED: Changed from 'localhost' to use MYSQL_HOST env var or 'mysql' service name
+// Reason: Docker containers cannot connect to 'localhost' - must use service name from docker-compose.yml
+// Original: $conn = new mysqli("localhost", "root", "", "live_network");
+$conn = new mysqli(getenv('MYSQL_HOST') ?: 'mysql', "root", "", "live_network");
 
 $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 if ($id <= 0) {

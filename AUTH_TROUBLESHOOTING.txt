@@ -1,0 +1,330 @@
+╔════════════════════════════════════════════════════════════════════════════════╗
+║                    NATMS AUTHENTICATION TROUBLESHOOTING GUIDE                    ║
+║                    "Incorrect Password" Error Diagnosis                          ║
+╚════════════════════════════════════════════════════════════════════════════════╝
+
+ISSUE: Getting "Incorrect password" error when trying to login
+
+================================================================================
+                           STEP-BY-STEP SOLUTIONS
+================================================================================
+
+STEP 1: Verify System is Running
+────────────────────────────────────────────────────────────────────────────────
+
+Check if all Docker containers are running:
+   $ docker ps
+
+You should see:
+   ✓ natms_web (PHP container)
+   ✓ natms_db  (MySQL container)
+
+If containers are NOT running:
+   $ cd /workspaces/MYCode
+   $ docker-compose up -d
+
+Then wait 10-15 seconds for MySQL to start.
+
+
+STEP 2: Verify Users Exist in Database
+────────────────────────────────────────────────────────────────────────────────
+
+Check if test users are in the database:
+   $ bash /workspaces/MYCode/verify_auth.sh
+
+This script will show:
+   ✓ Service status
+   ✓ Total users in database
+   ✓ Test credentials
+   ✓ Password hash verification
+
+If NO users appear in database:
+   $ cd /workspaces/MYCode
+   $ docker exec natms_db mysql -u root nshare_lite_db < DB/setup_users.sql
+
+This will create all 14 test users. Then try login again.
+
+
+STEP 3: Test Password Verification Directly
+────────────────────────────────────────────────────────────────────────────────
+
+Open the debug test page in your browser:
+   URL: http://127.0.0.1:8000/dashboard/debug_test.php
+
+This page shows:
+   ✓ All users in database
+   ✓ Test quick buttons for each account
+   ✓ Detailed password hash information
+   ✓ Whether password verification succeeds
+
+QUICK TESTS ON DEBUG PAGE:
+   • Click "Test: admin / admin123" button
+   • Look for: ✅ Hash matches password OR ❌ Hash does NOT match password
+
+If hash DOES NOT match:
+   → Password in database is not for that plaintext password
+   → Continue to Step 4
+
+
+STEP 4: Check Database Password Hashes
+────────────────────────────────────────────────────────────────────────────────
+
+View exact password hash for a user:
+   $ docker exec natms_db mysql -u root nshare_lite_db -e \
+     "SELECT username, password FROM users WHERE username='admin';"
+
+Expected output should show:
+   • username: admin
+   • password: Long string starting with $2y$ (bcrypt hash)
+
+If password is NULL or empty:
+   → User record exists but has no password
+   → Need to update password hash (see Step 5)
+
+
+STEP 5: Reset Password Hash in Database
+────────────────────────────────────────────────────────────────────────────────
+
+If password hash is missing or incorrect, reset it using:
+
+FOR ADMIN (admin123):
+   $ docker exec natms_db mysql -u root nshare_lite_db -e \
+     "UPDATE users SET password='\$2y\$10\$vH6E2qRvensyxmJCYLQ0TeVh6M2tSL7vdXE5cfSmlbnBHhjL3QJbe' \
+      WHERE username='admin';"
+
+FOR TRAINING (training123):
+   $ docker exec natms_db mysql -u root nshare_lite_db -e \
+     "UPDATE users SET password='\$2y\$10\$N9qo8uLOickgx2ZMRZoMyeIjZAgcg7b3XeKeUxWdeS86E36P4/nP.e' \
+      WHERE username='training';"
+
+FOR INSTRUCTOR (instructor123):
+   $ docker exec natms_db mysql -u root nshare_lite_db -e \
+     "UPDATE users SET password='\$2y\$10\$vH6E2qRvensyxmJCYLQ0TeVh6M2tSL7vdXE5cfSmlbnBHhjL3QJbe' \
+      WHERE username IN ('500','501','502','503','504');"
+
+FOR TRAINEE (password123):
+   $ docker exec natms_db mysql -u root nshare_lite_db -e \
+     "UPDATE users SET password='\$2y\$10\$N9qo8uLOickgx2ZMRZoMyeIjZAgcg7b3XeKeUxWdeS86E36P4/nP.e' \
+      WHERE username='trg01';"
+
+After updating, verify using debug page again.
+
+
+================================================================================
+                        PASSWORD HASH REFERENCE TABLE
+================================================================================
+
+Password             Hash Value
+─────────────────────────────────────────────────────────────────────────────
+password123    →  $2y$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcg7b3XeKeUxWdeS86E36P4/nP.e
+admin123       →  $2y$10$vH6E2qRvensyxmJCYLQ0TeVh6M2tSL7vdXE5cfSmlbnBHhjL3QJbe
+training123    →  $2y$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcg7b3XeKeUxWdeS86E36P4/nP.e
+director123    →  $2y$10$vH6E2qRvensyxmJCYLQ0TeVh6M2tSL7vdXE5cfSmlbnBHhjL3QJbe
+instructor123  →  $2y$10$vH6E2qRvensyxmJCYLQ0TeVh6M2tSL7vdXE5cfSmlbnBHhjL3QJbe
+
+
+================================================================================
+                              COMMON ISSUES
+================================================================================
+
+ISSUE 1: "User not found"
+────────────────────────────────────────────────────────────────────────────────
+Cause: Username doesn't exist in database
+
+Solution:
+   1. Open debug_test.php and verify user exists in table
+   2. Check spelling (usernames are case-sensitive)
+   3. Try with different test account
+   4. If no users: Run setup_users.sql
+
+
+ISSUE 2: "Incorrect password" (with correct username)
+────────────────────────────────────────────────────────────────────────────────
+Cause: Password hash in database doesn't match plaintext password
+
+Solution:
+   1. Open debug_test.php
+   2. Click quick test for that user
+   3. Check: Does "Hash matches password" say ✅ or ❌?
+   4. If ❌: Reset hash using Step 5 commands
+   5. Try login again
+
+
+ISSUE 3: "Account is inactive"
+────────────────────────────────────────────────────────────────────────────────
+Cause: User record has is_active = 0
+
+Solution:
+   $ docker exec natms_db mysql -u root nshare_lite_db -e \
+     "UPDATE users SET is_active=1 WHERE username='admin';"
+
+
+ISSUE 4: Database connection error
+────────────────────────────────────────────────────────────────────────────────
+Cause: MySQL container not responding
+
+Solution:
+   1. Check Docker: docker ps
+   2. If natms_db not running: docker-compose up -d
+   3. Wait 15 seconds
+   4. Try login again
+   5. Check logs: docker-compose logs natms_db
+
+
+ISSUE 5: Login_central.php shows blank page or error
+────────────────────────────────────────────────────────────────────────────────
+Cause: PHP error or improper form submission
+
+Solution:
+   1. Check PHP logs: docker-compose logs natms_web
+   2. Verify form is POSTing to login_central.php
+   3. Check that username and password fields are named correctly
+   4. Clear browser cache (Ctrl+Shift+Delete)
+
+
+================================================================================
+                          COMPLETE VERIFICATION FLOW
+================================================================================
+
+1. START: $ docker-compose up -d
+
+2. WAIT:  Sleep 10-15 seconds for MySQL
+
+3. SETUP: $ docker exec natms_db mysql -u root nshare_lite_db < DB/setup_users.sql
+
+4. VERIFY: $ bash verify_auth.sh
+           Should show ✅ for all items
+
+5. TEST:   Open http://127.0.0.1:8000/dashboard/debug_test.php
+           Click quick test buttons
+           Should see ✅ for password matches
+
+6. LOGIN:  Open http://127.0.0.1:8000/dashboard/login.php
+           Enter: admin / admin123
+           Should redirect to portals.php
+
+7. SUCCESS: See portal bubbles with modules
+           Click on any module
+           Should load that module
+
+
+================================================================================
+                              TEST CREDENTIALS
+================================================================================
+
+Quick Test Usernames & Passwords:
+──────────────────────────────────────────────────────────────────────────────
+
+admin / admin123            →  Full system access
+training / training123      →  Training staff
+500 / instructor123         →  Instructor  
+trg01 / password123         →  Trainee
+
+All other users / password123  →  Various roles
+
+
+For Complete List:
+see /credentials.txt
+
+
+================================================================================
+                         MANUAL PASSWORD RESET
+================================================================================
+
+If you want to create a NEW password hash and use different credentials:
+
+Generate bcrypt hash online:
+   Visit: https://www.bcrypt-generator.com/
+   Enter password: newpassword123
+   Hash cost: 10
+   Copy resulting hash
+
+Update in database:
+   $ docker exec natms_db mysql -u root nshare_lite_db -e \
+     "UPDATE users SET password='[PASTE_HASH_HERE]' WHERE username='admin';"
+
+Login with:
+   Username: admin
+   Password: newpassword123
+
+
+================================================================================
+                       STILL NOT WORKING?
+================================================================================
+
+If none of above works, collect debug information:
+
+1. Get all users:
+   $ docker exec natms_db mysql -u root nshare_lite_db -e "SELECT * FROM users;"
+
+2. Get PHP errors:
+   $ docker-compose logs natms_web | tail -50
+
+3. Get MySQL errors:
+   $ docker-compose logs natms_db | tail -50
+
+4. Test direct database:
+   $ docker exec -it natms_db mysql -u root
+   > SELECT username, password FROM users;
+   > exit
+
+5. Check login_central.php:
+   $ cat /workspaces/MYCode/dashboard/php/login_central.php
+
+6. Visit debug page:
+   http://127.0.0.1:8000/dashboard/debug_test.php
+
+Then compare what you see with expected values above.
+
+
+================================================================================
+                       RECOMMENDED TESTING SEQUENCE
+================================================================================
+
+1️⃣  Open debug_test.php:
+    http://127.0.0.1:8000/dashboard/debug_test.php
+
+2️⃣  Click "Test: admin / admin123" button
+    → See if test passes (✅) or fails (❌)
+
+3️⃣  If test passes:
+    → Try login at: http://127.0.0.1:8000/dashboard/login.php
+    
+4️⃣  If test fails:
+    → Database hash is wrong
+    → Use Step 5 commands to reset password
+
+5️⃣  Test other accounts same way
+
+6️⃣  Once one account works, all should work
+    (they use same authentication mechanism)
+
+
+================================================================================
+                         SUPPORT & DEBUGGING
+================================================================================
+
+Three helpful tools created for you:
+
+1. Login Page (with error display):
+   http://127.0.0.1:8000/dashboard/login.php
+   ↳ Shows error messages for failed logins
+
+2. Debug Test Page:
+   http://127.0.0.1:8000/dashboard/debug_test.php
+   ↳ Test passwords, view all users, verify hashes
+
+3. Verification Script:
+   bash /workspaces/MYCode/verify_auth.sh
+   ↳ Check services, users, hashes, quick tests
+
+
+================================================================================
+
+Created: February 18, 2025
+Status: Troubleshooting Guide v1.0
+Last Updated: 2025-02-18
+
+For more info: See credentials.txt and IMPLEMENTATION_SUMMARY.md
+
+================================================================================
