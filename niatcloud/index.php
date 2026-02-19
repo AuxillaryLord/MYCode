@@ -1,40 +1,157 @@
 <?php
+/**
+ * MODIFIED: Fixed niatcloud/index.php to handle missing uploads directory
+ * Reason: Original code failed when uploads/ directory didn't exist
+ * Original behavior: scandir() would fail with fatal error
+ * New behavior: Create directory if missing, handle gracefully
+ * Fix: Added error handling and directory creation
+ */
+
 session_start();
-if (!isset($_SESSION['user'])) {
-    header("Location: login.php");
+
+// MODIFIED: Use centralized authentication from dashboard
+// Reason: All modules should check same login system
+// Original: Checked only for $_SESSION['user']
+// New: Use unified RBAC system
+// Note: Already checked by portal.php before redirecting here
+if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
+    header("Location: /dashboard/login.php?error=" . urlencode("Please log in first"));
     exit();
 }
 
-$uploadDir = 'uploads/';
-$baseDir = 'uploads/';
-$folders = array_filter(scandir($baseDir), function ($item) use ($baseDir) {
-    return is_dir($baseDir . $item) && !in_array($item, ['.', '..']);
+// MODIFIED: Use session variable from centralized login
+// Reason: Consistent across all modules
+// Original: Used $_SESSION['user'] (inconsistent naming)
+// New: Using $_SESSION['user'] but with validation
+$username = $_SESSION['user'] ?? '';
+$display_name = $_SESSION['display_name'] ?? $username;
+$userRole = $_SESSION['role'] ?? 'guest';
+
+// MODIFIED: Define uploads directory path
+// Reason: Use relative path from current location
+// Original: Simple string 'uploads/'
+// New: Full path handling with proper directory checks
+// Security: Validate directory exists and is readable
+$uploadDir = __DIR__ . '/uploads/';
+$baseDir = __DIR__ . '/uploads/';
+
+// MODIFIED: Create uploads directory if it doesn't exist
+// Reason: First access would fail without this directory
+// Original: Assumed directory always existed
+// New: Auto-create with proper permissions
+// Benefit: Prevents fatal errors on first page load
+if (!file_exists($baseDir)) {
+    // MODIFIED: Create directory with error handling
+    // Reason: Gracefully handle creation failure
+    // Original: No directory creation
+    // New: Try to create, show error if fails
+    if (!@mkdir($baseDir, 0755, true)) {
+        // MODIFIED: Redirect to error page instead of fatal error
+        // Reason: User-friendly error display
+        // Original: Fatal error shown to user
+        // New: Professional error page
+        header('Location: /dashboard/error.php?code=500&type=error&message=' . 
+               urlencode('Cloud storage not accessible') . 
+               '&details=' . urlencode('Failed to create uploads directory') .
+               '&redirect=/dashboard/portals.php&redirect_text=Return to Dashboard');
+        exit();
+    }
+}
+
+// MODIFIED: Verify directory is readable/writable
+// Reason: Check permissions before proceeding
+// Original: No permission check
+// New: Validate directory permissions
+if (!is_readable($baseDir) || !is_writable($baseDir)) {
+    // MODIFIED: Redirect to error page
+    // Reason: Inform admin about permission issue
+    // Original: Silent failure or confusing error
+    // New: Clear permission error message
+    header('Location: /dashboard/error.php?code=500&type=error&message=' . 
+           urlencode('Cloud storage has permission issues') . 
+           '&details=' . urlencode('Uploads directory exists but is not readable/writable') .
+           '&redirect=/dashboard/portals.php&redirect_text=Return to Dashboard');
+    exit();
+}
+
+// MODIFIED: Safely scan directory with error handling
+// Reason: scandir() can fail if directory has permission issues
+// Original: Direct scandir() call without error handling
+// New: Wrapped in error handling with fallback
+// Benefit: Prevents fatal errors
+$scan_result = @scandir($baseDir);
+if ($scan_result === false) {
+    // MODIFIED: Handle scandir() failure gracefully
+    // Reason: Directory might be locked or have issues
+    // Original: Causes fatal error
+    // New: Show user-friendly message
+    header('Location: /dashboard/error.php?code=500&type=error&message=' . 
+           urlencode('Could not read cloud storage') . 
+           '&details=' . urlencode('Failed to list directory contents') .
+           '&redirect=/dashboard/portals.php&redirect_text=Return to Dashboard');
+    exit();
+}
+
+// MODIFIED: Filter and process directory listing
+// Reason: Remove . and .. entries, only get directories
+// Original: Used array_filter with callback
+// New: Same logic, now with proper $scan_result validation
+$folders = array_filter($scan_result, function ($item) use ($baseDir) {
+    // MODIFIED: Validate each item is a directory
+    // Reason: Exclude files from folder listing
+    // Original: Same logic
+    // New: Now working with validated scandir() result
+    return is_dir($baseDir . $item) && !in_array($item, ['.', '..', '.git', '.gitignore']);
 });
 
+// MODIFIED: Load custom folder ordering if exists
+// Reason: Allow admin to customize folder display order
+// Original: Used file_exists() and json_decode
+// New: Same logic with better error handling
 $orderFile = $baseDir . 'folder_order.json';
 $orderedFolders = [];
 
 if (file_exists($orderFile)) {
+    // MODIFIED: Read and parse folder order file
+    // Reason: Allow custom ordering
+    // Original: Direct file read and decode
+    // New: Same logic
     $customOrder = json_decode(file_get_contents($orderFile), true);
 
-    // Add folders in the defined order
-    foreach ($customOrder as $folderName) {
-        if (in_array($folderName, $folders)) {
-            $orderedFolders[] = $folderName;
+    if (is_array($customOrder)) {
+        // MODIFIED: Add folders in custom order
+        // Reason: Respect admin's folder ordering
+        // Original: Same logic
+        // New: With null check for customOrder
+        foreach ($customOrder as $folderName) {
+            if (in_array($folderName, $folders)) {
+                $orderedFolders[] = $folderName;
+            }
         }
-    }
 
-    // Add any remaining folders not in the JSON
-    foreach ($folders as $f) {
-        if (!in_array($f, $orderedFolders)) {
-            $orderedFolders[] = $f;
+        // MODIFIED: Add any remaining folders not explicitly ordered
+        // Reason: Show new folders created after ordering was set
+        // Original: Same logic
+        // New: Same logic
+        foreach ($folders as $f) {
+            if (!in_array($f, $orderedFolders)) {
+                $orderedFolders[] = $f;
+            }
         }
+    } else {
+        // MODIFIED: Fall back to unordered folders if JSON is invalid
+        // Reason: Handle corrupted folder_order.json gracefully
+        // Original: Would still use alphabetical order
+        // New: More explicit fallback
+        $orderedFolders = $folders;
     }
 } else {
-    $orderedFolders = $folders; // fallback if no folder_order.json
+    // MODIFIED: Use alphabetical order if no custom ordering file
+    // Reason: Default behavior when no preferences set
+    // Original: Same logic
+    // New: Same logic
+    $orderedFolders = $folders;
 }
-
-$userRole = $_SESSION['role'];
 ?>
 
 <!DOCTYPE html>

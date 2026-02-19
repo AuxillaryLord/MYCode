@@ -91,14 +91,17 @@ if (in_array($role, ['admin', 'user'])) {
     ];
 }
 
-// MODIFIED: Admin Panel (only for admin accounts)
-// Reason: Restrict system administration to authorized personnel
+// MODIFIED: Admin Panel - UNIFIED DASHBOARD
+// Reason: Create single admin interface instead of module-specific ones
+// Original: Pointed to /training-portal/admin/admin_panel.php (didn't exist)
+// New: Points to /dashboard/admin_panel.php (centralized admin dashboard)
+// Benefit: Admins see all modules, better control and visibility
 if ($role === 'admin') {
     $portals[] = [
         'title' => 'Admin Panel',
         'description' => 'System configuration, user management & analytics',
         'icon' => '⚙️',
-        'url' => '/training-portal/admin/admin_panel.php',
+        'url' => '/dashboard/admin_panel.php',
         'class' => 'portal-admin',
         'roles' => ['admin']
     ];
